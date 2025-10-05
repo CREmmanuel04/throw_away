@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Top Secret</title>
+  <style>
+    :root{
+      /* Romantic pink + white theme */
+      --bg1:#fff0f6; --bg2:#ffe3ee; --accent:#ff77a8; --accent2:#ffb3c7;
+      --card:#ffffffee; --text:#3a2b2f; --muted:#7d666c;
+      --danger:#ff6b6b; --ok:#5fbf5b;
+    }
+
+    /* Background */
+    body{
+      margin:0; min-height:100svh; display:grid; place-items:center; color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 800px at 20% 15%, #ffd1e1aa, transparent 60%),
+        radial-gradient(1000px 700px at 80% 80%, #ffcde4aa, transparent 60%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+
+    /* Card */
+    .card{
+      width:min(92vw, 560px);
+      background:var(--card);
+      backdrop-filter: blur(10px);
+      border:1px solid #ff9bb61f;
+      border-radius:24px;
+      padding:28px;
+      box-shadow: 0 20px 50px #ff6f8c33, inset 0 1px 0 #ffffffb0;
+      animation: pop .5s ease;
+    }
+    @keyframes pop{ from{ transform:scale(.98); opacity:0 } to{ transform:scale(1); opacity:1 } }
+
+    h1, h2{
+      margin:0 0 12px; line-height:1.15;
+    }
+    h1{ font-size:clamp(22px, 3.4vw, 30px); }
+    h2.big{ font-size:clamp(26px, 4.5vw, 36px); margin-bottom:6px; }
+    p.sub{ margin:0 0 20px; color:var(--muted); }
+
+    /* Input row */
+    .row{
+      display:flex; gap:10px; align-items:center;
+      background:#fff6f9; border:1px solid #ffbdd11f; border-radius:14px; padding:10px 12px;
+    }
+    label{
+      white-space:nowrap; color:#72565d; font-size:14px;
+    }
+    input[type="text"]{
+      flex:1; font-size:16px; color:var(--text);
+      background:transparent; border:0; outline:none; padding:12px 6px;
+    }
+    .btn{
+      appearance:none; border:0; cursor:pointer; border-radius:14px; padding:14px 16px;
+      background:linear-gradient(180deg, var(--accent), var(--accent2));
+      color:#3a0716; font-weight:700; transition: transform .08s ease, filter .2s ease, opacity .2s ease;
+      box-shadow: 0 8px 20px #ff6f8c55, inset 0 1px 0 #ffffffcc;
+      min-height:48px; /* comfy tap target */
+    }
+    .btn:active{ transform: translateY(1px) scale(.98); }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+    .hint{ min-height:20px; font-size:14px; margin:10px 2px 0; color:var(--muted); }
+    .hint.error{ color: var(--danger); }
+    .hint.ok{ color: var(--ok); }
+
+    /* Sections after gate */
+    .next, .invite{
+      display:none;
+      width:min(92vw, 560px);
+      text-align:center;
+      gap:12px;
+    }
+    .show{ display:grid; }
+
+    .cta, .cta-ghost, .cta-no{
+      display:inline-block; margin-top:8px;
+      padding:14px 16px; border-radius:14px; text-decoration:none; font-weight:700;
+      box-shadow: 0 8px 20px #ff6f8c55, inset 0 1px 0 #ffffffcc;
+      min-height:48px;
+    }
+    .cta{
+      background:linear-gradient(180deg, #ffd6e6, #ffc0d7);
+      color:#3a0f19;
+    }
+    .cta-ghost{
+      background:#ffffffcc; color:#7a3a49; border:1px solid #ff9bb655;
+    }
+    .cta-no{
+      background:linear-gradient(180deg, #ffe2ea, #ffd2df);
+      color:#7a3a49; border:1px solid #ffb3c5;
+    }
+
+    /* Button layout on mobile */
+    .btn-row{
+      display:flex; gap:10px; justify-content:center; margin-top:6px; flex-wrap:wrap;
+    }
+    .btn-row > a{
+      flex:1 1 220px;  /* stack on narrow screens, sit side-by-side on wider */
+    }
+
+    /* Small fades */
+    .fade-out{ animation: fade .28s ease forwards; }
+    @keyframes fade{ to{ opacity:0; transform: translateY(-4px) scale(.995);} }
+
+    .fade-in{ animation: fadeIn .35s ease both; }
+    @keyframes fadeIn{ from{opacity:0; transform: translateY(6px)} to{opacity:1; transform:none} }
+
+    /* Silly vanish animation for "Ew no" */
+    .poof{ animation: poof .28s ease forwards; transform-origin:center; }
+    @keyframes poof{
+      to{ opacity:0; transform:scale(.85) translateY(-6px); filter:blur(1px); pointer-events:none; }
+    }
+
+    /* Accessibility focus */
+    :focus-visible{ outline:2px solid #ff97b6; outline-offset:3px; border-radius:10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Gated card -->
+  <section class="card" id="gate">
+    <h1>Enter your name:</h1>
+    <p class="sub">Only meant for one person</p>
+
+    <form id="nameForm" autocomplete="off" novalidate>
+      <div class="row">
+        <label for="nameInput">Name</label>
+        <input id="nameInput" name="name" type="text" placeholder="e.g., Jessie" required />
+        <button id="goBtn" class="btn" type="submit">Continue →</button>
+      </div>
+      <div id="hint" class="hint" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <!-- What shows after the correct name -->
+  <section class="next card fade-in" id="next">
+    <h2 class="big">Hey beautiful. You look good.</h2>
+    <p>I made this just for you.</p>
+    <a class="cta" href="#invite" id="nextBtn">Next →</a>
+  </section>
+
+  <!-- Invite message -->
+  <section class="invite card fade-in" id="invite">
+    <h2 class="big">One more thing…</h2>
+    <p style="margin:6px 0 0; line-height:1.5;">
+      As you know, I am leaving to NYC Saturday and I am busy Thursday and Friday.
+      I think it'd be cool if we like hung out Wednesday night or something...
+      I can't tell you what the plan is — just trust me.
+    </p>
+
+    <div class="btn-row">
+      <a class="cta-ghost" href="#confirm" id="okBtn">Of course handsome!</a>
+      <a class="cta-no" href="#" id="noBtn">Ew no</a>
+    </div>
+  </section>
+
+  <script>
+    const form   = document.getElementById('nameForm');
+    const input  = document.getElementById('nameInput');
+    const hint   = document.getElementById('hint');
+    const gate   = document.getElementById('gate');
+    const next   = document.getElementById('next');
+    const invite = document.getElementById('invite');
+    const nextBtn= document.getElementById('nextBtn');
+    const okBtn  = document.getElementById('okBtn');
+    const noBtn  = document.getElementById('noBtn');
+
+    function isCorrectName(value){
+      // case-insensitive; switch to strict: return value.trim() === 'Jessie';
+      return value.trim().toLowerCase() === 'jessie';
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = input.value;
+      if (isCorrectName(val)) {
+        hint.textContent = 'Welcome! 🎉';
+        hint.className = 'hint ok';
+        gate.classList.add('fade-out');
+        setTimeout(() => {
+          gate.style.display = 'none';
+          next.classList.add('show');
+        }, 260);
+      } else {
+        hint.textContent = 'Not who I am looking for';
+        hint.className = 'hint error';
+        input.focus();
+        input.select();
+      }
+    });
+
+    // Reveal invite message when clicking Next
+    nextBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      next.classList.add('fade-out');
+      setTimeout(() => {
+        next.style.display = 'none';
+        invite.classList.add('show');
+      }, 260);
+    });
+
+    // "Ew no" — vanish on tap (leaving only the yes button)
+    noBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      noBtn.classList.add('poof');
+      setTimeout(() => noBtn.remove(), 280);
+    });
+
+    // Final redirect to the inside-joke video
+    okBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // YouTube link (opens in same tab to keep the flow)
+      window.location.href = "https://www.youtube.com/watch?v=6L_k74BOLag";
+    });
+
+    // Optional: live hint reset
+    input.addEventListener('input', () => {
+      if (!input.value.trim()) {
+        hint.textContent = '';
+        hint.className = 'hint';
+      }
+    });
+  </script>
+</body>
+</html>
